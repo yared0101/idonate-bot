@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "confirmed" ADD COLUMN     "createdTime" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

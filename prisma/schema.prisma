@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id          Int         @id @default(autoincrement())
+  telegramId  Int         @unique
+  name        String
+  phoneNumber String?
+  tgUsername  String?
+  isAdmin     Boolean     @default(false)
+  confirmed   confirmed[]
+}
+
+model ngo {
+  name             String       @id
+  address          String
+  accountHolder    String?
+  account          String
+  phoneNumber      String
+  membershipDonate membership[]
+  fixed            fixed[]
+  monthly          monthly[]
+  any              any[]
+  event            event[]
+}
+
+model membership {
+  pageId       String?
+  id           Int         @id @default(autoincrement())
+  toBeSentFile String
+  ngoName      String
+  amount       Float?
+  count        Int         @default(0)
+  ngo          ngo         @relation(references: [name], fields: [ngoName])
+  confirmed    confirmed[]
+}
+
+model fixed {
+  pageId    String?
+  id        Int         @id @default(autoincrement())
+  ngoName   String
+  amount    Float?
+  count     Int         @default(0)
+  ngo       ngo         @relation(references: [name], fields: [ngoName])
+  confirmed confirmed[]
+}
+
+model monthly {
+  pageId    String?
+  id        Int         @id @default(autoincrement())
+  ngoName   String
+  amount    Float?
+  count     Int         @default(0)
+  ngo       ngo         @relation(references: [name], fields: [ngoName])
+  confirmed confirmed[]
+}
+
+model event {
+  pageId    String?
+  id        Int         @id @default(autoincrement())
+  address   String?
+  ngoName   String
+  count     Int         @default(0)
+  ngo       ngo         @relation(references: [name], fields: [ngoName])
+  confirmed confirmed[]
+}
+
+model any {
+  pageId    String?
+  id        Int         @id @default(autoincrement())
+  ngoName   String
+  count     Int         @default(0)
+  ngo       ngo         @relation(references: [name], fields: [ngoName])
+  confirmed confirmed[]
+}
+
+model confirmed {
+  id             Int         @id @default(autoincrement())
+  screenshot     String?
+  confirmedById  Int
+  membershipFile String?
+  anyAmount      Float?
+  createdTime    DateTime    @default(now())
+  confirmedBy    user        @relation(references: [id], fields: [confirmedById])
+  anyId          Int?
+  any            any?        @relation(references: [id], fields: [anyId])
+  eventId        Int?
+  event          event?      @relation(references: [id], fields: [eventId])
+  monthlyId      Int?
+  monthly        monthly?    @relation(references: [id], fields: [monthlyId])
+  fixedId        Int?
+  fixed          fixed?      @relation(references: [id], fields: [fixedId])
+  membershipId   Int?
+  membership     membership? @relation(references: [id], fields: [membershipId])
+}
