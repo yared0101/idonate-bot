@@ -74,7 +74,7 @@ module.exports = (bot) => {
                     ctx.update.callback_query.message.message_id
                 );
                 await ctx.reply(
-                    "thanks, please send screenshot of your transaction"
+                    "Thank You! for your kindness.\nUse the Address Below to Donate."
                 );
                 sessionData[ctx.chat.id] = {
                     fixedOrMonthly: {

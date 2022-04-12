@@ -269,6 +269,12 @@ const isRegistered = async (ctx) => {
         await allModels.user.findUnique({ where: { telegramId: ctx.chat.id } })
     );
 };
+/**
+ *
+ * @param {Telegraf} bot
+ * @param {string} id
+ * @returns
+ */
 const addTripSend = async (
     bot,
     id,
@@ -280,7 +286,8 @@ const addTripSend = async (
     let sent = data.posterPictures.split(" ");
     sent.pop();
     const len = sent.length;
-    if (len) {
+    console.log(sent);
+    if (len > 1) {
         const returned = await bot.telegram.sendMediaGroup(
             id,
             [
@@ -290,9 +297,11 @@ const addTripSend = async (
                         media: element,
                         caption:
                             index === len - 1
-                                ? data.description === "pass"
-                                    ? undefined
-                                    : `${data.description}\n\n@${process.env.CHANNEL_ID}`
+                                ? `${
+                                      data.description === "pass"
+                                          ? ""
+                                          : `${data.description}\n\n`
+                                  }@${process.env.CHANNEL_ID}`
                                 : undefined,
                     };
                 }),
@@ -305,6 +314,16 @@ const addTripSend = async (
                 markups.donateMarkup(createdId, createdType)
             ));
         return returned;
+    } else if (len === 1) {
+        const returned = await bot.telegram.sendPhoto(id, sent[0], {
+            caption: `${
+                data.description === "pass" ? "" : `${data.description}\n\n`
+            }@${process.env.CHANNEL_ID}`,
+            ...(includeMarkup
+                ? markups.donateMarkup(createdId, createdType)
+                : {}),
+        });
+        return [returned];
     } else {
         const returned = await bot.telegram.sendMessage(
             id,

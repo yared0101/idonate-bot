@@ -124,7 +124,7 @@ module.exports = async (bot) => {
                     );
                 },
                 any: async (ctx, donation) => {
-                    await ctx.reply(`how much birr are u intending to send?`);
+                    await ctx.reply(`How much do you want to donate?`);
                     sessionData[ctx.chat.id] = {
                         any: {
                             id,
