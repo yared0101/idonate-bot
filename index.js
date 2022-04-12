@@ -1,11 +1,11 @@
 require("dotenv").config();
-const { Telegraf } = require("telegraf");
-// const { Composer } = require("micro-bot");
-const bot = new Telegraf(process.env.BOT_TOKEN);
-// const bot = new Composer();
-// bot.init = async (mBot) => {
-// bot.telegram = mBot.telegram;
-// };
+// const { Telegraf } = require("telegraf");
+const { Composer } = require("micro-bot");
+// const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Composer();
+bot.init = async (mBot) => {
+    bot.telegram = mBot.telegram;
+};
 const {
     allModels,
     sessionData,
@@ -861,6 +861,6 @@ const selectNgoForReport = async (ctx, sessionName) => {
     sessionData[ctx.chat.id][sessionName].ngo = NGO.name || "fff";
     await ctx.reply("please select range of report", markups.chooseTimeMarkup);
 };
-// module.exports = bot;
-bot.launch();
-console.log("started");
+module.exports = bot;
+// bot.launch();
+// console.log("started");
