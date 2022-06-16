@@ -22,6 +22,7 @@ const helpStrings = {
     addNgo: "🆕 NGO",
     getEvents: "Get Events 📃",
     getMoney: "Get Money 💰",
+    getAll: "Full Report",
     getForms: "Get Forms 📄",
     getScreenshots: "Get Screenshots 📷",
     register: "Register",
@@ -39,6 +40,7 @@ const helpStrings = {
     byMonth: "last 12 months",
     home: "Home",
     seeUsers: "👀 all users",
+    getAdPost: "Ad Post",
 };
 const markups = {
     superAdminMarkup: {
@@ -63,6 +65,7 @@ const markups = {
                     { text: helpStrings.getForms },
                     { text: helpStrings.getScreenshots },
                 ],
+                [{ text: helpStrings.getAll }, { text: helpStrings.getAdPost }],
             ],
             resize_keyboard: true,
         },
@@ -82,6 +85,7 @@ const markups = {
                     { text: helpStrings.getForms },
                     { text: helpStrings.getScreenshots },
                 ],
+                [{ text: helpStrings.getAll }, { text: helpStrings.getAdPost }],
             ],
             resize_keyboard: true,
         },
@@ -179,6 +183,52 @@ const markups = {
             one_time_keyboard: true,
         },
     },
+    typeOfReportMarkup: (type) => {
+        let displayed;
+        if (type === "fixed" || type === "any" || type == "monthly") {
+            displayed = [
+                [
+                    {
+                        text: helpStrings.getMoney,
+                    },
+                    {
+                        text: helpStrings.getScreenshots,
+                    },
+                ],
+            ];
+        }
+        if (type === "event") {
+            displayed = [
+                [
+                    {
+                        text: helpStrings.getEvents,
+                    },
+                ],
+            ];
+        }
+        if (type === "membership") {
+            displayed = [
+                [
+                    {
+                        text: helpStrings.getMoney,
+                    },
+                    {
+                        text: helpStrings.getScreenshots,
+                    },
+                    {
+                        text: helpStrings.getForms,
+                    },
+                ],
+            ];
+        }
+        return {
+            reply_markup: {
+                keyboard: displayed || [],
+                resize_keyboard: true,
+                one_time_keyboard: true,
+            },
+        };
+    },
     donateMarkup: (id, type) => {
         console.log({ id, type });
         return {
@@ -186,7 +236,10 @@ const markups = {
                 inline_keyboard: [
                     [
                         {
-                            text: "Donate",
+                            text:
+                                type === "event"
+                                    ? "I Want to Attend"
+                                    : "Donate",
                             url: `${process.env.BOT_ID}?start=${id}_${type}`,
                         },
                     ],
@@ -240,6 +293,42 @@ const markups = {
             ],
         },
     },
+    advertisementMarkup: {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    {
+                        text: "Help A Child",
+                        url: `https://t.me/${process.env.CHANNEL_ID}`,
+                    },
+                ],
+                [
+                    {
+                        text: "Help The Elders",
+                        url: `https://t.me/${process.env.CHANNEL_ID}`,
+                    },
+                ],
+                [
+                    {
+                        text: "Help The Needy",
+                        url: `https://t.me/${process.env.CHANNEL_ID}`,
+                    },
+                ],
+                [
+                    {
+                        text: "Join A Volunteering Event",
+                        url: `https://t.me/${process.env.CHANNEL_ID}`,
+                    },
+                ],
+                [
+                    {
+                        text: "Subscribe For A Yearly Membership",
+                        url: `https://t.me/${process.env.CHANNEL_ID}`,
+                    },
+                ],
+            ],
+        },
+    },
 };
 
 let sessionData = { login: {} };
@@ -269,6 +358,19 @@ const isRegistered = async (ctx) => {
         await allModels.user.findUnique({ where: { telegramId: ctx.chat.id } })
     );
 };
+/**
+ *
+ * @param {import('@prisma/client').user[]} users
+ */
+const parseUsersIntoString = (users) => {
+    return `${users.map(
+        (elem, index) =>
+            `\n${index + 1}. <a href="tg://user?id=${elem.telegramId}">${
+                elem.name
+            }</a>`
+    )}`;
+};
+
 /**
  *
  * @param {Telegraf} bot
@@ -367,4 +469,5 @@ module.exports = {
     addTripSend,
     ngoDetail,
     refresh,
+    parseUsersIntoString,
 };

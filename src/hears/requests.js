@@ -11,6 +11,7 @@ const {
     isSuperAdmin,
     ngoDetail,
     isRegistered,
+    parseUsersIntoString,
 } = require("../../config");
 const { user, ngo, confirmed } = allModels;
 /**
@@ -202,6 +203,23 @@ module.exports = async (bot) => {
             await ctx.reply("something went wrong");
         }
     });
+    bot.hears(helpStrings.getAdPost, async (ctx) => {
+        if (!(await isAdmin(ctx))) {
+            next();
+        }
+        try {
+            await ctx.replyWithPhoto(
+                "AgACAgQAAxkBAAIbv2KoRMIDujnxRxc2f-oj44XAqQKoAAInuzEbr9lBUa1BzJ6F-CDYAQADAgADeAADJAQ",
+                {
+                    caption:
+                        "Do you want to help someone but don't know how? There is a new way for you to make a big impact and it's easy. With iDonate, people who need medical treatment, food, clothes get a chance for a better life. Now it's more convenient than ever to access the good as well. Obtain everyone with just a few clicks.",
+                    ...markups.advertisementMarkup,
+                }
+            );
+        } catch {
+            await ctx.reply("something went wrong");
+        }
+    });
     bot.hears(helpStrings.seeNgos, async (ctx) => {
         if (!(await isAdmin(ctx))) {
             next();
@@ -233,15 +251,9 @@ module.exports = async (bot) => {
         try {
             const users = await user.findMany({ where: { isAdmin: false } });
             if (users.length) {
-                await ctx.reply(
-                    `Here you go\n${users.map(
-                        (elem, index) =>
-                            `\n${index + 1}. <a href="tg://user?id=${
-                                elem.telegramId
-                            }">${elem.name}</a>`
-                    )}`,
-                    { parse_mode: "HTML" }
-                );
+                await ctx.reply(`Here you go\n${parseUsersIntoString(users)}`, {
+                    parse_mode: "HTML",
+                });
             } else {
                 await ctx.reply(
                     `no non-admin users registered`,
@@ -277,10 +289,29 @@ module.exports = async (bot) => {
             helpStrings.getScreenshots,
             helpStrings.getEvents,
             helpStrings.getForms,
+            helpStrings.getAll,
             helpStrings.getMoney,
         ],
         async (ctx) => {
             try {
+                if (sessionData[ctx.chat.id]?.eventScreenshot?.fromStart) {
+                    delete sessionData[ctx.chat.id].eventScreenshot.fromStart;
+                    sessionData[ctx.chat.id].eventScreenshot.type =
+                        ctx.message.text === helpStrings.getScreenshots
+                            ? "screenshot"
+                            : ctx.message.text === helpStrings.getEvents
+                            ? "event"
+                            : ctx.message.text === helpStrings.getMoney
+                            ? "money"
+                            : ctx.message.text === helpStrings.getForms
+                            ? "form"
+                            : "all";
+                    await ctx.reply(
+                        "please select range of report",
+                        markups.chooseTimeMarkup
+                    );
+                    return;
+                }
                 sessionData[ctx.chat.id] = {
                     eventScreenshot: {
                         type:
@@ -290,7 +321,9 @@ module.exports = async (bot) => {
                                 ? "event"
                                 : ctx.message.text === helpStrings.getMoney
                                 ? "money"
-                                : "form",
+                                : ctx.message.text === helpStrings.getForms
+                                ? "form"
+                                : "all",
                     },
                 };
                 const ngos = await allModels.ngo.findMany({
@@ -298,21 +331,21 @@ module.exports = async (bot) => {
                 });
                 if (ngos.length) {
                     sessionData[ctx.chat.id].eventScreenshot.ngolist = ngos;
-                    if (ctx.message.text === helpStrings.getMoney) {
-                        await ctx.reply(
-                            `please send ngo number from${ngos.map(
-                                (elem, index) => `\n${index + 1}. ${elem.name}`
-                            )}\n${ngos.length + 1}. All
-                            `
-                        );
-                    } else {
-                        await ctx.reply(
-                            `please send ngo number from${ngos.map(
-                                (elem, index) => `\n${index + 1}. ${elem.name}`
-                            )}
-                            `
-                        );
-                    }
+                    await ctx.reply(
+                        `please send ngo number from${ngos.map(
+                            (elem, index) => `\n${index + 1}. ${elem.name}`
+                        )}\n${ngos.length + 1}. All
+                        `
+                    );
+                    // if (ctx.message.text === helpStrings.getMoney) {
+                    // } else {
+                    //     await ctx.reply(
+                    //         `please send ngo number from${ngos.map(
+                    //             (elem, index) => `\n${index + 1}. ${elem.name}`
+                    //         )}
+                    //         `
+                    //     );
+                    // }
                 } else {
                     delete sessionData[ctx.chat.id].eventScreenshot;
                     await ctx.reply(
@@ -568,7 +601,9 @@ module.exports = async (bot) => {
                             } forms\n------------------------------------------`
                         );
                     }
-                } else {
+                } else if (
+                    sessionData[ctx.chat.id]?.eventScreenshot.type == "money"
+                ) {
                     let filtered = [];
                     const compareNumber = byDay ? 7 : byWeek ? 4 : 12;
                     let currentFil = new Date();
@@ -630,9 +665,7 @@ module.exports = async (bot) => {
                             innerTotal += amount;
                             await ctx.reply(
                                 `type: ${type}\namount:${amount}\nFrom user <a href="tg://user?id=${money?.confirmedBy?.telegramId}">${money?.confirmedBy?.name}</a>`,
-                                {
-                                    parse_mode: "HTML",
-                                }
+                                { parse_mode: "HTML" }
                             );
                         }
                         await ctx.reply(
@@ -643,6 +676,67 @@ module.exports = async (bot) => {
                         outerTotal += innerTotal;
                     }
                     await ctx.reply(`total from all ${outerTotal} Birr`);
+                } else {
+                    let gtDate = new Date();
+                    const ltDate = new Date();
+                    if (byDay) {
+                        gtDate.setDate(gtDate.getDate() - 7); //last 7 days
+                    } else if (byWeek) {
+                        gtDate.setMonth(gtDate.getMonth() - 1); //last 4 weeks(last month)
+                    } else {
+                        gtDate.setFullYear(gtDate.getFullYear() - 1); //last year(last 12 months)
+                    }
+                    const subscriptions = allConfirmed.filter(
+                        ({ createdTime, membershipId, membershipFile }) =>
+                            createdTime < ltDate &&
+                            createdTime >= gtDate &&
+                            membershipId &&
+                            membershipFile
+                    );
+                    const money = allConfirmed.filter(
+                        ({
+                            createdTime,
+                            anyId,
+                            membershipId,
+                            monthlyId,
+                            fixedId,
+                        }) =>
+                            createdTime < ltDate &&
+                            createdTime >= gtDate &&
+                            (anyId || membershipId || monthlyId || fixedId)
+                    );
+                    const events = allConfirmed.filter(
+                        ({ createdTime, eventId }) =>
+                            createdTime < ltDate &&
+                            createdTime >= gtDate &&
+                            eventId
+                    );
+                    //all we need is the count for events and subscriptions, so lets calculate for money
+                    let total = 0;
+                    for (let i in money) {
+                        const money1 = money[i];
+                        const type = money1.any
+                            ? "any"
+                            : money1.fixed
+                            ? "fixed"
+                            : money1.membership
+                            ? "membership"
+                            : "monthly";
+                        const amount =
+                            type === "any"
+                                ? money1.anyAmount
+                                : money1[type].amount;
+                        total += amount;
+                    }
+                    await ctx.reply(
+                        `in the last ${
+                            byDay ? "week" : byWeek ? "month" : "year"
+                        } we got \n${total} birr, ${
+                            events.length
+                        } people attended events, ${
+                            subscriptions.length
+                        } people subscribed for a membership!`
+                    );
                 }
             } catch (e) {
                 console.log(e);

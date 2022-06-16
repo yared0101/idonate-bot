@@ -12,6 +12,7 @@ const {
     isSuperAdmin,
     sessionData,
     ngoDetail,
+    parseUsersIntoString,
 } = require("../../config");
 const { user, confirmed, membership } = allModels;
 /**
@@ -32,7 +33,7 @@ module.exports = async (bot) => {
             });
             if (await isAdmin(ctx)) {
                 ctx.reply(
-                    `this post's button has been started ${donation.count} times`
+                    `this post's button has been pressed ${donation.count} times`
                 );
                 const allConfirmed = await confirmed.findMany({
                     where: {
@@ -47,16 +48,33 @@ module.exports = async (bot) => {
                         confirmedBy: true,
                     },
                 });
+                if (allConfirmed.length) {
+                    await ctx.reply(
+                        "the people who have pressed the post are as follows" +
+                            `
+    ${parseUsersIntoString(allConfirmed.map((elem) => elem.confirmedBy))}
+                    `,
+                        { parse_mode: "HTML" }
+                    );
+                }
                 sessionData[ctx.chat.id] = {
                     eventScreenshot: {
-                        type: model,
-                        ngo: donation.ngo,
+                        type:
+                            model == "fixed" ||
+                            model == "any" ||
+                            model == "monthly"
+                                ? "money"
+                                : model == "membership"
+                                ? "screenshot"
+                                : model === "",
+                        ngo: donation.ngo.name,
                         allConfirmed,
+                        fromStart: true,
                     },
                 };
                 await ctx.reply(
-                    "please select range of report(since you're an admin)",
-                    markups.chooseTimeMarkup
+                    "please select report type(since you're an admin)",
+                    markups.typeOfReportMarkup(model)
                 );
                 return;
             }
