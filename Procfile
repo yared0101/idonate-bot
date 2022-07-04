@@ -1,2 +1,2 @@
 web: micro-bot -p $PORT
-release: npx prisma db push
+release: npx prisma migrate deploy & npx prisma generate

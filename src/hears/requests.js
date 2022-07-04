@@ -729,13 +729,13 @@ module.exports = async (bot) => {
                         total += amount;
                     }
                     await ctx.reply(
-                        `in the last ${
-                            byDay ? "week" : byWeek ? "month" : "year"
-                        } we got \n${total} birr, ${
+                        `IN THE LAST ${
+                            byDay ? "WEEK" : byWeek ? "MONTH" : "YEAR"
+                        } THE BOT HAS RAISED \n${total} birr,\n${
                             events.length
-                        } people attended events, ${
+                        } PEOPLE VOLUNTEERED &\n${
                             subscriptions.length
-                        } people subscribed for a membership!`
+                        } PEOPLE SUBSCRIBED FOR A YEARLY MEMBERSHIP!`
                     );
                 }
             } catch (e) {

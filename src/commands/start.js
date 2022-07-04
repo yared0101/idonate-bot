@@ -26,7 +26,6 @@ module.exports = async (bot) => {
         if (holder) {
             const id = parseInt(holder[0]);
             const model = holder[1];
-            console.log({ id, model });
             const donation = await allModels[model].findUnique({
                 where: { id },
                 include: { ngo: true },
@@ -35,6 +34,28 @@ module.exports = async (bot) => {
                 ctx.reply(
                     `this post's button has been pressed ${donation.count} times`
                 );
+                const countPeople = donation.countPeople;
+                if (countPeople.length) {
+                    const users = await allModels.user.findMany({
+                        where: {
+                            OR: countPeople.map((elem) => ({
+                                telegramId: elem,
+                            })),
+                        },
+                    });
+                    console.log({
+                        OR: countPeople.map((elem) => ({
+                            telegramId: elem,
+                        })),
+                    });
+                    console.log({ users });
+                    await ctx.reply(
+                        "the people who have pressed the post are as follows" +
+                            `\n${parseUsersIntoString(users)}
+                            `,
+                        { parse_mode: "HTML" }
+                    );
+                }
                 const allConfirmed = await confirmed.findMany({
                     where: {
                         [model + "Id"]: donation.id,
@@ -50,10 +71,11 @@ module.exports = async (bot) => {
                 });
                 if (allConfirmed.length) {
                     await ctx.reply(
-                        "the people who have pressed the post are as follows" +
-                            `
-    ${parseUsersIntoString(allConfirmed.map((elem) => elem.confirmedBy))}
-                    `,
+                        "the people who have confirmed the post are as follows" +
+                            `\n${parseUsersIntoString(
+                                allConfirmed.map((elem) => elem.confirmedBy)
+                            )}
+                            `,
                         { parse_mode: "HTML" }
                     );
                 }
@@ -78,16 +100,42 @@ module.exports = async (bot) => {
                 );
                 return;
             }
-            await allModels[model].update({
+            //check if user is registered, if not register them!
+            await user.upsert({
+                where: {
+                    telegramId: ctx.chat.id,
+                },
+                update: {
+                    name: ctx.chat.first_name,
+                    tgUsername: ctx.chat.username,
+                },
+                create: {
+                    name: ctx.chat.first_name,
+                    tgUsername: ctx.chat.username,
+                    telegramId: ctx.chat.id,
+                },
+            });
+            const countModel = await allModels[model].findUnique({
                 where: {
                     id: donation.id,
                 },
-                data: {
-                    count: {
-                        increment: 1,
-                    },
-                },
             });
+            let countPeople = countModel.countPeople;
+            const userExists = countPeople.find((elem) => elem === ctx.chat.id);
+            if (!userExists) {
+                countPeople.push(ctx.chat.id);
+                await allModels[model].update({
+                    where: {
+                        id: donation.id,
+                    },
+                    data: {
+                        count: {
+                            increment: 1,
+                        },
+                        countPeople,
+                    },
+                });
+            }
             const userFormat = {
                 membership: async (ctx, donation) => {
                     await ctx.reply(

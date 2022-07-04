@@ -40,47 +40,52 @@ model membership {
   ngoName      String
   amount       Float?
   count        Int         @default(0)
+  countPeople  Int[]
   ngo          ngo         @relation(references: [name], fields: [ngoName])
   confirmed    confirmed[]
 }
 
 model fixed {
-  pageId    String?
-  id        Int         @id @default(autoincrement())
-  ngoName   String
-  amount    Float?
-  count     Int         @default(0)
-  ngo       ngo         @relation(references: [name], fields: [ngoName])
-  confirmed confirmed[]
+  pageId      String?
+  id          Int         @id @default(autoincrement())
+  ngoName     String
+  amount      Float?
+  count       Int         @default(0)
+  countPeople Int[]
+  ngo         ngo         @relation(references: [name], fields: [ngoName])
+  confirmed   confirmed[]
 }
 
 model monthly {
-  pageId    String?
-  id        Int         @id @default(autoincrement())
-  ngoName   String
-  amount    Float?
-  count     Int         @default(0)
-  ngo       ngo         @relation(references: [name], fields: [ngoName])
-  confirmed confirmed[]
+  pageId      String?
+  id          Int         @id @default(autoincrement())
+  ngoName     String
+  amount      Float?
+  count       Int         @default(0)
+  countPeople Int[]
+  ngo         ngo         @relation(references: [name], fields: [ngoName])
+  confirmed   confirmed[]
 }
 
 model event {
-  pageId    String?
-  id        Int         @id @default(autoincrement())
-  address   String?
-  ngoName   String
-  count     Int         @default(0)
-  ngo       ngo         @relation(references: [name], fields: [ngoName])
-  confirmed confirmed[]
+  pageId      String?
+  id          Int         @id @default(autoincrement())
+  address     String?
+  ngoName     String
+  count       Int         @default(0)
+  countPeople Int[]
+  ngo         ngo         @relation(references: [name], fields: [ngoName])
+  confirmed   confirmed[]
 }
 
 model any {
-  pageId    String?
-  id        Int         @id @default(autoincrement())
-  ngoName   String
-  count     Int         @default(0)
-  ngo       ngo         @relation(references: [name], fields: [ngoName])
-  confirmed confirmed[]
+  pageId      String?
+  id          Int         @id @default(autoincrement())
+  ngoName     String
+  count       Int         @default(0)
+  countPeople Int[]
+  ngo         ngo         @relation(references: [name], fields: [ngoName])
+  confirmed   confirmed[]
 }
 
 model confirmed {
