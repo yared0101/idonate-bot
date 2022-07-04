@@ -1,2 +1,2 @@
 web: micro-bot -p $PORT
-release: npx prisma migrate resolve --applied 20220223162610_init & npx prisma migrate resolve --applied 20220223190128_init & npx prisma migrate resolve --applied  20220225082352_init & npx prisma migrate resolve --applied  20220225161011_init & npx prisma migrate resolve --applied  20220228094313_init & npx prisma migrate resolve --applied  20220303062819_init & npx prisma migrate resolve --applied  20220310063847_init & npx prisma migrate deploy & npx prisma generate
+release: npx prisma migrate deploy & npx prisma generate
