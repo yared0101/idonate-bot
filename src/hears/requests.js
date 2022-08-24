@@ -40,6 +40,28 @@ module.exports = async (bot) => {
             await ctx.reply("something went wrong");
         }
     });
+    bot.hears(helpStrings.addPostURL, async (ctx) => {
+        try {
+            if (!(await isAdmin(ctx))) {
+                ctx.reply("you are not an admin");
+                return;
+            }
+            sessionData[ctx.chat.id] = {
+                addTrip: {
+                    withUrl: true,
+                    url: undefined,
+                    type: undefined,
+                    posterPictures: "",
+                },
+            };
+            await ctx.reply(
+                "please select one of the types",
+                markups.chooseTypeMarkup
+            );
+        } catch {
+            await ctx.reply("something went wrong");
+        }
+    });
     bot.hears(
         [
             helpStrings.membership,
@@ -63,7 +85,9 @@ module.exports = async (bot) => {
                         : ctx.message.text === helpStrings.any
                         ? "any"
                         : "monthly";
-
+                if (sessionData[ctx.chat.id].addTrip.withUrl) {
+                    return await ctx.reply("please send url to link to");
+                }
                 const ngos = await allModels.ngo.findMany({
                     select: { name: true },
                 });

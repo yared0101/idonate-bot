@@ -6,6 +6,7 @@ const helpStrings = {
     botLink: "testorganizersbot",
     newAccount: "Add Account",
     addPost: "📝 Add Post",
+    addPostURL: "📝 Add Post By Url Only",
     login: "Login",
     individual: "I'm an Individual",
     organization: "We're an Organization",
@@ -56,8 +57,12 @@ const markups = {
                     { text: helpStrings.seeNgos },
                     { text: helpStrings.editNgo },
                 ],
-                [{ text: helpStrings.addPost }, { text: helpStrings.seeUsers }],
                 [
+                    { text: helpStrings.addPost },
+                    { text: helpStrings.addPostURL },
+                ],
+                [
+                    { text: helpStrings.seeUsers },
                     { text: helpStrings.getEvents },
                     { text: helpStrings.getMoney },
                 ],
@@ -73,12 +78,12 @@ const markups = {
     adminMarkup: {
         reply_markup: {
             keyboard: [
-                [{ text: helpStrings.addPost }, { text: helpStrings.seeUsers }],
                 [
-                    { text: helpStrings.addNgo },
-                    { text: helpStrings.seeNgos },
-                    { text: helpStrings.editNgo },
+                    { text: helpStrings.addPost },
+                    { text: helpStrings.addPostURL },
                 ],
+                [{ text: helpStrings.seeNgos }, { text: helpStrings.seeUsers }],
+                [{ text: helpStrings.addNgo }, { text: helpStrings.editNgo }],
                 [{ text: helpStrings.getMoney }],
                 [
                     { text: helpStrings.getEvents },
@@ -229,7 +234,7 @@ const markups = {
             },
         };
     },
-    donateMarkup: (id, type) => {
+    donateMarkup: (id, type, url) => {
         console.log({ id, type });
         return {
             reply_markup: {
@@ -240,7 +245,9 @@ const markups = {
                                 type === "event"
                                     ? "I Want to Attend"
                                     : "Donate",
-                            url: `${process.env.BOT_ID}?start=${id}_${type}`,
+                            url:
+                                url ||
+                                `${process.env.BOT_ID}?start=${id}_${type}`,
                         },
                     ],
                 ],
@@ -383,7 +390,8 @@ const addTripSend = async (
     data,
     createdId,
     createdType,
-    includeMarkup = true
+    includeMarkup = true,
+    url
 ) => {
     let sent = data.posterPictures.split(" ");
     sent.pop();
@@ -413,7 +421,7 @@ const addTripSend = async (
             (await bot.telegram.sendMessage(
                 id,
                 "donate 👆👆👆👆",
-                markups.donateMarkup(createdId, createdType)
+                markups.donateMarkup(createdId, createdType, url)
             ));
         return returned;
     } else if (len === 1) {
@@ -422,7 +430,7 @@ const addTripSend = async (
                 data.description === "pass" ? "" : `${data.description}\n\n`
             }@${process.env.CHANNEL_ID}`,
             ...(includeMarkup
-                ? markups.donateMarkup(createdId, createdType)
+                ? markups.donateMarkup(createdId, createdType, url)
                 : {}),
         });
         return [returned];
@@ -430,7 +438,9 @@ const addTripSend = async (
         const returned = await bot.telegram.sendMessage(
             id,
             `${data.description}\n\n@${process.env.CHANNEL_ID}`,
-            includeMarkup ? markups.donateMarkup(createdId, createdType) : {}
+            includeMarkup
+                ? markups.donateMarkup(createdId, createdType, url)
+                : {}
         );
         return [returned];
     }

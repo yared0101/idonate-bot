@@ -1,11 +1,11 @@
 require("dotenv").config();
-// const { Telegraf } = require("telegraf");
-const { Composer } = require("micro-bot");
-// const bot = new Telegraf(process.env.BOT_TOKEN);
-const bot = new Composer();
-bot.init = async (mBot) => {
-    bot.telegram = mBot.telegram;
-};
+const { Telegraf } = require("telegraf");
+// const { Composer } = require("micro-bot");
+const bot = new Telegraf(process.env.BOT_TOKEN);
+// const bot = new Composer();
+// bot.init = async (mBot) => {
+//     bot.telegram = mBot.telegram;
+// };
 const {
     allModels,
     sessionData,
@@ -53,7 +53,14 @@ bot.use(async (ctx) => {
                 );
             } else if (
                 sessionData[ctx.chat.id]?.addTrip &&
-                !sessionData[ctx.chat.id]?.addTrip?.ngo
+                sessionData[ctx.chat.id]?.addTrip?.withUrl &&
+                !sessionData[ctx.chat.id]?.addTrip?.url
+            ) {
+                await selectUrlCalled(ctx);
+            } else if (
+                sessionData[ctx.chat.id]?.addTrip &&
+                !sessionData[ctx.chat.id]?.addTrip?.ngo &&
+                !sessionData[ctx.chat.id]?.addTrip?.withUrl
             ) {
                 await selectNgoCalled(ctx);
             } else if (
@@ -63,10 +70,14 @@ bot.use(async (ctx) => {
                 !sessionData[ctx.chat.id]?.addTrip?.address &&
                 ["membership", "monthly", "fixed", "event"].indexOf(
                     sessionData[ctx.chat.id]?.addTrip?.type
-                ) != -1
+                ) != -1 &&
+                !sessionData[ctx.chat.id]?.addTrip?.withUrl
             ) {
                 await addAmountCalled(ctx);
-            } else if (sessionData[ctx.chat.id]?.addTrip?.ngo) {
+            } else if (
+                sessionData[ctx.chat.id]?.addTrip?.ngo ||
+                sessionData[ctx.chat.id]?.addTrip?.url
+            ) {
                 await addTripCalled(ctx);
             } else if (sessionData[ctx.chat.id]?.eventScreenshot) {
                 if (sessionData[ctx.chat.id]?.eventScreenshot.ngo) {
@@ -182,15 +193,15 @@ const registerCalled = async (ctx) => {
 const callerBasedOnType = async (ctx) => {
     try {
         if (sessionData[ctx.chat.id].addTrip.type === "membership") {
-            await membershipCalled(ctx);
+            await membershipCalled(ctx, sessionData[ctx.chat.id].addTrip.url);
         } else if (sessionData[ctx.chat.id].addTrip.type === "fixed") {
-            await fixedCalled(ctx);
+            await fixedCalled(ctx, sessionData[ctx.chat.id].addTrip.url);
         } else if (sessionData[ctx.chat.id].addTrip.type === "monthly") {
-            await monthlyCalled(ctx);
+            await monthlyCalled(ctx, sessionData[ctx.chat.id].addTrip.url);
         } else if (sessionData[ctx.chat.id].addTrip.type === "event") {
-            await eventCalled(ctx);
+            await eventCalled(ctx, sessionData[ctx.chat.id].addTrip.url);
         } else if (sessionData[ctx.chat.id].addTrip.type === "any") {
-            await anyCalled(ctx);
+            await anyCalled(ctx, sessionData[ctx.chat.id].addTrip.url);
         }
         delete sessionData[ctx.chat.id];
     } catch (e) {
@@ -198,7 +209,28 @@ const callerBasedOnType = async (ctx) => {
         await ctx.reply("something went wrong");
     }
 };
-const membershipCalled = async (ctx) => {
+const membershipCalled = async (ctx, url) => {
+    if (url) {
+        await addTripSend(
+            bot,
+            `@${process.env.CHANNEL_ID}`,
+            sessionData[ctx.chat.id].addTrip,
+            "stuff",
+            "membership",
+            true,
+            url
+        );
+        return await ctx.reply(
+            "successfully sent to page",
+            isSuperAdmin(ctx)
+                ? markups.superAdminMarkup
+                : (await isAdmin(ctx))
+                ? markups.adminMarkup
+                : (await isRegistered(ctx))
+                ? markups.goToPageMarkup
+                : markups.freshMarkup
+        );
+    }
     const fileId = ctx?.message?.document?.file_id;
     const created = await membership.create({
         data: {
@@ -287,7 +319,29 @@ const addNgoCalled = async (ctx) => {
         }
     }
 };
-const fixedCalled = async (ctx) => {
+const fixedCalled = async (ctx, url) => {
+    if (url) {
+        await addTripSend(
+            bot,
+            `@${process.env.CHANNEL_ID}`,
+            sessionData[ctx.chat.id].addTrip,
+            "stuff",
+            "fixed",
+            true,
+            url
+        );
+        return await ctx.reply(
+            "successfully sent to page",
+            isSuperAdmin(ctx)
+                ? markups.superAdminMarkup
+                : (await isAdmin(ctx))
+                ? markups.adminMarkup
+                : (await isRegistered(ctx))
+                ? markups.goToPageMarkup
+                : markups.freshMarkup
+        );
+        s;
+    }
     const created = await fixed.create({
         data: {
             ngoName: sessionData[ctx.chat.id].addTrip.ngo,
@@ -317,7 +371,28 @@ const fixedCalled = async (ctx) => {
         data: { pageId: String(postData[0].message_id) },
     });
 };
-const monthlyCalled = async (ctx) => {
+const monthlyCalled = async (ctx, url) => {
+    if (url) {
+        await addTripSend(
+            bot,
+            `@${process.env.CHANNEL_ID}`,
+            sessionData[ctx.chat.id].addTrip,
+            "stuff",
+            "monthly",
+            true,
+            url
+        );
+        return await ctx.reply(
+            "successfully sent to page",
+            isSuperAdmin(ctx)
+                ? markups.superAdminMarkup
+                : (await isAdmin(ctx))
+                ? markups.adminMarkup
+                : (await isRegistered(ctx))
+                ? markups.goToPageMarkup
+                : markups.freshMarkup
+        );
+    }
     const created = await monthly.create({
         data: {
             ngoName: sessionData[ctx.chat.id].addTrip.ngo,
@@ -347,7 +422,29 @@ const monthlyCalled = async (ctx) => {
         data: { pageId: String(postData[0].message_id) },
     });
 };
-const eventCalled = async (ctx) => {
+const eventCalled = async (ctx, url) => {
+    if (url) {
+        await addTripSend(
+            bot,
+            `@${process.env.CHANNEL_ID}`,
+            sessionData[ctx.chat.id].addTrip,
+            "stuff",
+            "event",
+            true,
+            url
+        );
+        return await ctx.reply(
+            "successfully sent to page",
+            isSuperAdmin(ctx)
+                ? markups.superAdminMarkup
+                : (await isAdmin(ctx))
+                ? markups.adminMarkup
+                : (await isRegistered(ctx))
+                ? markups.goToPageMarkup
+                : markups.freshMarkup
+        );
+        s;
+    }
     const created = await event.create({
         data: {
             ngoName: sessionData[ctx.chat.id].addTrip.ngo,
@@ -377,7 +474,29 @@ const eventCalled = async (ctx) => {
         data: { pageId: String(postData[0].message_id) },
     });
 };
-const anyCalled = async (ctx) => {
+const anyCalled = async (ctx, url) => {
+    if (url) {
+        await addTripSend(
+            bot,
+            `@${process.env.CHANNEL_ID}`,
+            sessionData[ctx.chat.id].addTrip,
+            "stuff",
+            "any",
+            true,
+            url
+        );
+        return await ctx.reply(
+            "successfully sent to page",
+            isSuperAdmin(ctx)
+                ? markups.superAdminMarkup
+                : (await isAdmin(ctx))
+                ? markups.adminMarkup
+                : (await isRegistered(ctx))
+                ? markups.goToPageMarkup
+                : markups.freshMarkup
+        );
+        s;
+    }
     const created = await any.create({
         data: {
             ngoName: sessionData[ctx.chat.id].addTrip.ngo,
@@ -445,7 +564,11 @@ const addTripCalled = async (ctx) => {
         } else {
             sessionData[ctx.chat.id].addTrip.description = ctx.message.text;
             if (sessionData[ctx.chat.id].addTrip.type === "membership") {
-                await ctx.reply("please send membership pdf file");
+                if (sessionData[ctx.chat.id].addTrip.url) {
+                    await callerBasedOnType(ctx);
+                } else {
+                    await ctx.reply("please send membership pdf file");
+                }
             } else if (sessionData[ctx.chat.id].addTrip.type === "fixed") {
                 await callerBasedOnType(ctx);
             } else if (sessionData[ctx.chat.id].addTrip.type === "monthly") {
@@ -589,6 +712,20 @@ const removeAdminCalled = async (ctx) => {
         delete sessionData[ctx.chat.id].removeAdmin;
         await ctx.reply("The user is now  regular!", markups.superAdminMarkup);
     } catch (e) {}
+};
+const selectUrlCalled = async (ctx) => {
+    const urlEntity = ctx?.message?.entities?.find(
+        (elem) => elem.type === "url"
+    );
+    if (urlEntity) {
+        sessionData[ctx.chat.id].addTrip.url = ctx.message.text.slice(
+            urlEntity.offset,
+            urlEntity.length
+        );
+        await ctx.reply("ok send photos now", markups.passMarkup);
+    } else {
+        await ctx.reply("please send a normal link", markups.passMarkup);
+    }
 };
 const editNgoCalled = async (ctx) => {
     const editedNgo = parseInt(ctx.message.text);
@@ -855,6 +992,6 @@ const selectNgoForReport = async (ctx, sessionName) => {
     sessionData[ctx.chat.id][sessionName].ngo = NGO.name || "all";
     await ctx.reply("please select range of report", markups.chooseTimeMarkup);
 };
-module.exports = bot;
-// bot.launch();
-// console.log("started");
+// module.exports = bot;
+bot.launch();
+console.log("started");
