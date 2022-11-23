@@ -94,6 +94,11 @@ const markups = {
                 ],
                 [{ text: helpStrings.seeNgos }, { text: helpStrings.seeUsers }],
                 [{ text: helpStrings.addNgo }, { text: helpStrings.editNgo }],
+                [
+                    { text: helpStrings.newVote },
+                    { text: helpStrings.endVote },
+                    { text: helpStrings.voteResults },
+                ],
                 [{ text: helpStrings.getMoney }],
                 [
                     { text: helpStrings.getEvents },
