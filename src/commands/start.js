@@ -21,11 +21,63 @@ const { user, confirmed, membership } = allModels;
  * @returns
  */
 module.exports = async (bot) => {
-    bot.command("start", async (ctx) => {
+    bot.command("start", async (ctx, next) => {
         const holder = ctx.message.text.split(" ")[1]?.split("_");
         if (holder) {
+            console.log({ holder });
             const id = parseInt(holder[0]);
             const model = holder[1];
+            const isVote = model == "vote";
+            if (isVote) {
+                const voteId = id;
+                const votes = await allModels.vote.findFirst({
+                    where: { currentVote: true },
+                });
+                if (!votes) {
+                    return await ctx.reply(
+                        "vote has been closed, please find new votes on the channel",
+                        markups.goToPageMarkup
+                    );
+                }
+                const alreadyVoted = await allModels.votePics.findFirst({
+                    where: {
+                        voteId: votes.id,
+                        votes: {
+                            has: ctx.chat.id,
+                        },
+                    },
+                });
+                if (alreadyVoted) {
+                    return await ctx.reply(
+                        `You've already cast your vote for <a href="https://t.me/${`${process.env.CHANNEL_ID}`}/${
+                            alreadyVoted.telegramPostId
+                        }">this candidate</a>`,
+                        { parse_mode: "HTML" }
+                    );
+                } else {
+                    const votes = await allModels.votePics.update({
+                        where: {
+                            id: voteId,
+                        },
+                        data: {
+                            votes: {
+                                push: ctx.chat.id,
+                            },
+                        },
+                    });
+                    await bot.telegram.editMessageReplyMarkup(
+                        `@${process.env.CHANNEL_ID}`,
+                        votes.telegramPostId,
+                        "",
+                        markups.candidateMarkup(voteId, votes.votes.length)
+                            .reply_markup
+                    );
+                    return await ctx.reply(
+                        `Thank you for your vote!`,
+                        markups.goToPageMarkup
+                    );
+                }
+            }
             const donation = await allModels[model].findUnique({
                 where: { id },
                 include: { ngo: true },

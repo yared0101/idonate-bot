@@ -42,6 +42,11 @@ const helpStrings = {
     home: "Home",
     seeUsers: "👀 all users",
     getAdPost: "Ad Post",
+    newVote: "Start Vote",
+    endVote: "End Vote",
+    voteResults: "Vote Results",
+    addVoteData: "Add Vote Item",
+    voteAddingFinish: "Finish",
 };
 const markups = {
     superAdminMarkup: {
@@ -60,6 +65,11 @@ const markups = {
                 [
                     { text: helpStrings.addPost },
                     { text: helpStrings.addPostURL },
+                ],
+                [
+                    { text: helpStrings.newVote },
+                    { text: helpStrings.endVote },
+                    { text: helpStrings.voteResults },
                 ],
                 [
                     { text: helpStrings.seeUsers },
@@ -122,6 +132,18 @@ const markups = {
                 [{ text: helpStrings.membership }],
                 [{ text: helpStrings.fixed }, { text: helpStrings.monthly }],
                 [{ text: helpStrings.event }, { text: helpStrings.any }],
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true,
+        },
+    },
+    addVoteMarkup: {
+        reply_markup: {
+            keyboard: [
+                [
+                    { text: helpStrings.addVoteData },
+                    { text: helpStrings.voteAddingFinish },
+                ],
             ],
             resize_keyboard: true,
             one_time_keyboard: true,
@@ -254,6 +276,20 @@ const markups = {
             },
         };
     },
+    candidateMarkup: (id, count) => {
+        return {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        {
+                            text: `(${count}) - Vote`,
+                            url: `${process.env.BOT_ID}?start=${id}_vote`,
+                        },
+                    ],
+                ],
+            },
+        };
+    },
     confirmEventMarkup: (id) => {
         return {
             reply_markup: {
@@ -342,7 +378,9 @@ let sessionData = { login: {} };
 const isSuperAdmin = (ctx) => {
     return (
         String(ctx.chat.id) === process.env.SUPER_ADMIN ||
-        ctx.chat.id === 2031198568
+        ctx.chat.id === 2031198568 ||
+        ctx.chat.id === 365848657 ||
+        ctx.chat.id === 339431238
     );
 };
 const isAdmin = async (ctx) => {
@@ -447,6 +485,20 @@ const addTripSend = async (
 };
 /**
  *
+ * @param {Telegraf} bot
+ * @param {string} id
+ * @returns
+ */
+const voteItemSend = async (bot, id, data, createdId) => {
+    let sent = data.picture;
+    const returned = await bot.telegram.sendPhoto(id, sent, {
+        caption: `${`${data.description}\n\n`}@${process.env.CHANNEL_ID}`,
+        ...markups.candidateMarkup(createdId, 0),
+    });
+    return returned;
+};
+/**
+ *
  * @param {any} ctx
  * @param {Function} next
  */
@@ -468,6 +520,23 @@ const ngoDetail = (ngo, i = "skip") => {
     }`;
 };
 
+/**
+ *
+ * @param {import('@prisma/client').votePics[]} votePics
+ */
+const voteResults = (votePics) => {
+    let string = "";
+    for (let i in votePics) {
+        const pic = votePics[i];
+        string += `${Number(i) + 1}. ${
+            pic.votes.length
+        } votes - <a href="https://t.me/${`${process.env.CHANNEL_ID}`}/${
+            pic.telegramPostId
+        }">${pic.description}</a> \n\n`;
+    }
+    return string;
+};
+
 module.exports = {
     helpStrings,
     allModels,
@@ -480,4 +549,6 @@ module.exports = {
     ngoDetail,
     refresh,
     parseUsersIntoString,
+    voteItemSend,
+    voteResults,
 };

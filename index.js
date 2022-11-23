@@ -15,6 +15,7 @@ const {
     isSuperAdmin,
     isRegistered,
     ngoDetail,
+    voteItemSend,
 } = require("./config");
 const { user, ngo, fixed, membership, any, monthly, event, confirmed } =
     allModels;
@@ -112,6 +113,8 @@ bot.use(async (ctx) => {
             } else if (sessionData[ctx.chat.id]?.fixedOrMonthly) {
                 await clientFixedOrMonthlyCalled(ctx);
                 return;
+            } else if (sessionData[ctx.chat.id]?.newCandidate) {
+                return await addVoteItemCalled(ctx);
             } else {
                 await ctx.reply(
                     "please use one of the buttons",
@@ -147,6 +150,8 @@ bot.use(async (ctx) => {
             } else if (sessionData[ctx.chat.id]?.membership) {
                 await clientMembershipCalled(ctx);
                 return;
+            } else if (sessionData[ctx.chat.id]?.newCandidate) {
+                return await addVoteItemCalled(ctx);
             }
         } else if (ctx?.message?.document?.file_id) {
             if (sessionData[ctx.chat.id]?.addTrip?.type === "membership") {
@@ -991,6 +996,60 @@ const selectNgoForReport = async (ctx, sessionName) => {
     delete sessionData[ctx.chat.id][sessionName].ngolist;
     sessionData[ctx.chat.id][sessionName].ngo = NGO.name || "all";
     await ctx.reply("please select range of report", markups.chooseTimeMarkup);
+};
+const addVoteItemCalled = async (ctx) => {
+    try {
+        let photo = ctx?.message?.photo?.pop()?.file_id;
+        if (!sessionData[ctx.chat.id].newCandidate.picture) {
+            if (photo) {
+                sessionData[ctx.chat.id].newCandidate.picture = photo;
+                await ctx.reply(
+                    "Photo added successfully please send description"
+                );
+            } else {
+                return await ctx.reply("please send a photo");
+            }
+        } else {
+            sessionData[ctx.chat.id].newCandidate.description =
+                ctx.message.text;
+            const savedVotePic = await allModels.votePics.create({
+                data: {
+                    description:
+                        sessionData[ctx.chat.id].newCandidate.description,
+                    picture: sessionData[ctx.chat.id].newCandidate.picture,
+                    voteId: sessionData[ctx.chat.id].newCandidate.voteId,
+                },
+            });
+            const message = await voteItemSend(
+                bot,
+                `@${process.env.CHANNEL_ID}`,
+                sessionData[ctx.chat.id].newCandidate,
+                savedVotePic.id
+            );
+            console.log({ message });
+            const updated = await allModels.votePics.update({
+                where: {
+                    id: savedVotePic.id,
+                },
+                data: {
+                    telegramPostId: `${message.message_id}`,
+                },
+            });
+            console.log({ updated });
+            sessionData[ctx.chat.id] = {
+                newCandidate: {
+                    voteId: sessionData[ctx.chat.id].newCandidate.voteId,
+                    picture: undefined,
+                    description: undefined,
+                },
+            };
+            return await ctx.reply(
+                "Posted successfully, Please send another vote picture"
+            );
+        }
+    } catch (e) {
+        console.log(e);
+    }
 };
 module.exports = bot;
 // bot.launch();

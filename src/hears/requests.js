@@ -12,8 +12,9 @@ const {
     ngoDetail,
     isRegistered,
     parseUsersIntoString,
+    voteResults,
 } = require("../../config");
-const { user, ngo, confirmed } = allModels;
+const { user, ngo, confirmed, vote, votePics } = allModels;
 /**
  *
  * @param {Telegraf} bot
@@ -768,4 +769,129 @@ module.exports = async (bot) => {
             }
         }
     );
+    bot.hears(helpStrings.newVote, async (ctx) => {
+        try {
+            if (!(await isAdmin(ctx))) {
+                ctx.reply("you are not an admin");
+                return;
+            }
+            const votes = await vote.findFirst({
+                where: { currentVote: true },
+            });
+            sessionData[ctx.chat.id] = {
+                voteMode: true,
+            };
+            if (votes) {
+                return await ctx.reply(
+                    "There is an ongoing vote, please close it or continue adding",
+                    markups.addVoteMarkup
+                );
+            } else {
+                await vote.create({ data: { currentVote: true } });
+            }
+            return await ctx.reply(
+                `new vote started, please select ${helpStrings.newVote} to start adding new candidates`,
+                markups.addVoteMarkup
+            );
+        } catch {
+            await ctx.reply("something went wrong");
+        }
+    });
+    bot.hears(helpStrings.endVote, async (ctx) => {
+        try {
+            if (!(await isAdmin(ctx))) {
+                ctx.reply("you are not an admin");
+                return;
+            }
+            const votes = await vote.findFirst({
+                where: { currentVote: true },
+            });
+            if (votes) {
+                await vote.update({
+                    where: { id: votes.id },
+                    data: { currentVote: false },
+                });
+                return await ctx.reply(
+                    `current vote has been closed!! please select ${helpStrings.voteResults} to see results`
+                );
+            } else {
+                const votes = await vote.findFirst({
+                    orderBy: {
+                        id: "desc",
+                    },
+                });
+                await vote.update({
+                    where: { id: votes.id },
+                    data: { currentVote: true },
+                });
+                return await ctx.reply(
+                    `latest vote has been restarted successfully`
+                );
+            }
+        } catch {
+            await ctx.reply("something went wrong");
+        }
+    });
+    bot.hears(helpStrings.addVoteData, async (ctx, next) => {
+        try {
+            if (!(await isAdmin(ctx))) {
+                ctx.reply("you are not an admin");
+                return;
+            }
+            const votes = await vote.findFirst({
+                where: { currentVote: true },
+            });
+            if (!votes) {
+                return await ctx.reply(
+                    "No running vote exists, please start one",
+                    isSuperAdmin(ctx)
+                        ? markups.superAdminMarkup
+                        : markups.adminMarkup
+                );
+            }
+            sessionData[ctx.chat.id] = {
+                newCandidate: {
+                    voteId: votes.id,
+                    picture: undefined,
+                    description: undefined,
+                },
+            };
+            await ctx.reply("Please send vote picture");
+        } catch {
+            await ctx.reply("something went wrong");
+        }
+    });
+    bot.hears(helpStrings.voteResults, async (ctx, next) => {
+        try {
+            if (!(await isAdmin(ctx))) {
+                ctx.reply("you are not an admin");
+                return;
+            }
+            const votes = await vote.findFirst({
+                orderBy: {
+                    id: "desc",
+                },
+            });
+            if (!votes) {
+                return await ctx.reply(
+                    "No running vote exists, please start one",
+                    isSuperAdmin(ctx)
+                        ? markups.superAdminMarkup
+                        : markups.adminMarkup
+                );
+            }
+            const votePicss = await votePics.findMany({
+                where: { voteId: votes.id },
+            });
+            votePicss.sort((a, b) => b.votes.length - a.votes.length);
+            const voteString = voteResults(votePicss);
+            await ctx.reply(voteString, {
+                parse_mode: "HTML",
+                disable_web_page_preview: true,
+            });
+        } catch (e) {
+            console.log(e);
+            await ctx.reply("something went wrong");
+        }
+    });
 };
