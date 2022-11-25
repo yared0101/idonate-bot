@@ -1,11 +1,11 @@
 require("dotenv").config();
-// const { Telegraf } = require("telegraf");
-const { Composer } = require("micro-bot");
-// const bot = new Telegraf(process.env.BOT_TOKEN);
-const bot = new Composer();
-bot.init = async (mBot) => {
-    bot.telegram = mBot.telegram;
-};
+const { Telegraf } = require("telegraf");
+// const { Composer } = require("micro-bot");
+const bot = new Telegraf(process.env.BOT_TOKEN);
+// const bot = new Composer();
+// bot.init = async (mBot) => {
+// bot.telegram = mBot.telegram;
+// };
 const {
     allModels,
     sessionData,
@@ -1036,21 +1036,18 @@ const addVoteItemCalled = async (ctx) => {
                 },
             });
             console.log({ updated });
-            sessionData[ctx.chat.id] = {
-                newCandidate: {
-                    voteId: sessionData[ctx.chat.id].newCandidate.voteId,
-                    picture: undefined,
-                    description: undefined,
-                },
-            };
-            return await ctx.reply(
-                "Posted successfully, Please send another vote picture"
-            );
+            sessionData[ctx.chat.id] = {};
+            return await ctx.reply("Posted successfully");
         }
     } catch (e) {
         console.log(e);
     }
 };
-module.exports = bot;
-// bot.launch();
+// module.exports = bot;
+bot.launch({
+    webhook: {
+        domain: process.env.BOT_DOMAIN,
+        port: 8080,
+    },
+});
 console.log("started");
